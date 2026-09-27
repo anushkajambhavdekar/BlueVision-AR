@@ -121,6 +121,9 @@ export function ManualBuilder({ setViewerAsset, onProjectCreated }: ManualBuilde
               <text x="398" y="198" fill="#f8fafc" fontSize="16" transform="rotate(90 398 198)" textAnchor="middle">
                 {buildingWidth} m
               </text>
+              <text x="60" y="356" fill="#bae6fd" fontSize="14">
+                {floors} floor(s) | {rooms} room(s) | {doors} entrance(s)
+              </text>
             </svg>
           </div>
         </div>
@@ -172,21 +175,21 @@ export function ManualBuilder({ setViewerAsset, onProjectCreated }: ManualBuilde
                 <Layers className="h-4 w-4" />
                 <span className="text-sm">Floors</span>
               </div>
-              <input type="number" min="1" max="5" value={floors} onChange={(e) => setFloors(Number(e.target.value))} className="w-full rounded-lg bg-black/20 p-2 text-white" />
+              <input type="number" min="1" max="5" step="1" required value={floors} onChange={(e) => setFloors(Math.min(5, Math.max(1, Number(e.target.value) || 1)))} className="w-full rounded-lg bg-black/20 p-2 text-white" />
             </div>
             <div className="rounded-xl border border-white/10 bg-white/5 p-4">
               <div className="mb-2 flex items-center gap-2 text-cyan-300">
                 <BedDouble className="h-4 w-4" />
                 <span className="text-sm">Rooms</span>
               </div>
-              <input type="number" min="1" max="12" value={rooms} onChange={(e) => setRooms(Number(e.target.value))} className="w-full rounded-lg bg-black/20 p-2 text-white" />
+              <input type="number" min="1" max="12" step="1" required value={rooms} onChange={(e) => setRooms(Math.min(12, Math.max(1, Number(e.target.value) || 1)))} className="w-full rounded-lg bg-black/20 p-2 text-white" />
             </div>
             <div className="rounded-xl border border-white/10 bg-white/5 p-4">
               <div className="mb-2 flex items-center gap-2 text-cyan-300">
                 <DoorOpen className="h-4 w-4" />
                 <span className="text-sm">Doors</span>
               </div>
-              <input type="number" min="1" max="4" value={doors} onChange={(e) => setDoors(Number(e.target.value))} className="w-full rounded-lg bg-black/20 p-2 text-white" />
+              <input type="number" min="1" max="4" step="1" required value={doors} onChange={(e) => setDoors(Math.min(4, Math.max(1, Number(e.target.value) || 1)))} className="w-full rounded-lg bg-black/20 p-2 text-white" />
             </div>
           </div>
 

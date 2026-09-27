@@ -18,8 +18,7 @@ export function ARSection({ viewerAsset }: ARSectionProps) {
 
   const createARLink = async () => {
     if (!modelUrl) {
-      alert("AR is available only for generated 3D models.");
-      return;
+      return null;
     }
 
     try {
@@ -33,9 +32,11 @@ export function ARSection({ viewerAsset }: ARSectionProps) {
       });
       setArUrl(data.arUrl);
       setQrCodeDataUrl(data.qrCodeDataUrl || "");
+      return data;
     } catch (error) {
       console.error(error);
       alert("Unable to create AR link");
+      return null;
     } finally {
       setIsLoading(false);
     }
@@ -49,12 +50,10 @@ export function ARSection({ viewerAsset }: ARSectionProps) {
   }, [modelUrl, iosModelUrl]);
 
   const shareLink = async () => {
-    if (!arUrl) {
-      await createARLink();
-      return;
-    }
     try {
-      await navigator.clipboard.writeText(arUrl);
+      const data = arUrl ? { arUrl } : await createARLink();
+      if (!data) return;
+      await navigator.clipboard.writeText(data.arUrl);
       alert("AR link copied");
     } catch {
       alert("Unable to copy AR link");
@@ -62,12 +61,10 @@ export function ARSection({ viewerAsset }: ARSectionProps) {
   };
 
   const downloadQR = async () => {
-    if (!qrCodeDataUrl) {
-      await createARLink();
-      return;
-    }
+    const data = qrCodeDataUrl ? { qrCodeDataUrl } : await createARLink();
+    if (!data?.qrCodeDataUrl) return;
     const anchor = document.createElement("a");
-    anchor.href = qrCodeDataUrl;
+    anchor.href = data.qrCodeDataUrl;
     anchor.download = "ar-qr-code.png";
     anchor.click();
   };

@@ -7,11 +7,17 @@ import path from "path";
 import { fileURLToPath } from "url";
 import QRCode from "qrcode";
 import mysql from "mysql2/promise";
+import dotenv from "dotenv";
 import "dotenv/config";
+import { convertFloorPlanToGlb } from "./floorPlanToGlb.js";
+import { analyzeFloorPlanWithGemini } from "./geminiFloorPlan.js";
+import { persistGeminiConfig } from "./geminiConfig.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, "..");
+const localSecretsFile = path.join(rootDir, ".env.local");
+dotenv.config({ path: localSecretsFile, override: false });
 const dataDir = path.join(rootDir, "data");
 const uploadsDir = path.join(rootDir, "uploads");
 const projectsFile = path.join(dataDir, "projects.json");
@@ -25,6 +31,9 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const HOST = process.env.HOST || "0.0.0.0";
 const MESHY_API_KEY = process.env.MESHY_API_KEY || "";
+let activeGeminiApiKey = process.env.GEMINI_API_KEY || "";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+const GEMINI_API_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 const MESHY_API_BASE_URL = "https://api.meshy.ai";
 const MESHY_POLL_INTERVAL_MS = 5000;
 const MESHY_TIMEOUT_MS = 8 * 60 * 1000;
@@ -42,6 +51,10 @@ const storage = multer.diskStorage({
   },
 });
 const upload = multer({ storage });
+const analysisUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+});
 
 const PLACEHOLDER_MODEL_URL =
   "https://modelviewer.dev/shared-assets/models/Astronaut.glb";
@@ -315,6 +328,42 @@ function hasMeshyApiKey() {
   return Boolean(MESHY_API_KEY && MESHY_API_KEY !== "your_meshy_api_key_here");
 }
 
+function hasGeminiApiKey() {
+  return Boolean(activeGeminiApiKey && activeGeminiApiKey !== "your_gemini_api_key_here");
+}
+
+async function enhancePromptWithGemini(prompt) {
+  const response = await fetch(
+    `${GEMINI_API_BASE_URL}/${encodeURIComponent(GEMINI_MODEL)}:generateContent?key=${encodeURIComponent(activeGeminiApiKey)}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: AbortSignal.timeout(30000),
+      body: JSON.stringify({
+        systemInstruction: {
+          parts: [{
+            text: "Rewrite the user's request as one concise, detailed visual prompt for generating a single 3D asset. Preserve the requested object, style, materials, colors, and useful distinctive details. Do not add commentary, markdown, or unrelated objects.",
+          }],
+        },
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.3, maxOutputTokens: 256 },
+      }),
+    }
+  );
+  const payload = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(payload?.error?.message || `Gemini request failed with status ${response.status}`);
+  }
+
+  const enhancedPrompt = payload?.candidates?.[0]?.content?.parts
+    ?.map((part) => part.text || "")
+    .join(" ")
+    .trim();
+  if (!enhancedPrompt) throw new Error("Gemini returned an empty prompt.");
+  return enhancedPrompt.slice(0, 1000);
+}
+
 function requireMeshyApiKey() {
   if (!hasMeshyApiKey()) {
     throw new Error("MESHY_API_KEY is missing. Add a real Meshy API key in Backend/.env.");
@@ -472,7 +521,7 @@ function writeProjects(projects) {
   fs.writeFileSync(projectsFile, JSON.stringify(projects, null, 2), "utf-8");
 }
 
-function createProject({ title, type, source = "", modelUrl = PLACEHOLDER_MODEL_URL, iosModelUrl = "" }) {
+function createProject({ title, type, source = "", modelUrl = PLACEHOLDER_MODEL_URL, iosModelUrl = "", conversion = "" }) {
   const projects = readProjects();
   const now = new Date();
   const project = {
@@ -482,6 +531,7 @@ function createProject({ title, type, source = "", modelUrl = PLACEHOLDER_MODEL_
     source,
     modelUrl,
     iosModelUrl,
+    ...(conversion ? { conversion } : {}),
     polygons: Math.floor(Math.random() * 70000 + 5000).toLocaleString(),
     date: now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
     createdAt: now.toISOString(),
@@ -493,7 +543,7 @@ function createProject({ title, type, source = "", modelUrl = PLACEHOLDER_MODEL_
 
 function getStats() {
   const projects = readProjects();
-  const totalUploads = projects.filter((p) => p.type === "Image to 3D").length;
+  const totalUploads = projects.filter((p) => p.type === "Image to 3D" || p.type === "Image Upload").length;
   const totalProjects = projects.length;
   const successRate = totalProjects === 0 ? 100 : Math.round((totalProjects / Math.max(totalProjects, 1)) * 100);
   return {
@@ -605,7 +655,42 @@ app.get("/stats", (_req, res) => {
 app.get("/config", (_req, res) => {
   res.json({
     meshyConfigured: hasMeshyApiKey(),
+    geminiConfigured: hasGeminiApiKey(),
   });
+});
+
+app.post("/config/gemini", (req, res) => {
+  const origin = String(req.get("origin") || "");
+  let originHostname = "";
+  try {
+    originHostname = new URL(origin).hostname;
+  } catch {
+    originHostname = "";
+  }
+  const localOrigin = ["localhost", "127.0.0.1", "::1"].includes(originHostname);
+  const localAddress = String(req.ip || "").replace(/^::ffff:/, "");
+  const localClient = ["127.0.0.1", "::1"].includes(localAddress);
+  if (!localOrigin || !localClient) {
+    return res.status(403).json({ error: "Gemini keys can only be set from the local development browser." });
+  }
+
+  const apiKey = String(req.body?.apiKey || "").trim();
+  if (apiKey.length < 20 || apiKey.length > 300 || /\s/.test(apiKey)) {
+    return res.status(400).json({ error: "Enter a valid Gemini API key." });
+  }
+
+  const persist = req.body?.persist === true;
+  if (persist) {
+    try {
+      persistGeminiConfig(localSecretsFile, apiKey, GEMINI_MODEL);
+    } catch (error) {
+      console.error("Failed to persist local Gemini configuration:", error.message);
+      return res.status(500).json({ error: "Could not save the Gemini key locally. You can still connect it for this session." });
+    }
+  }
+
+  activeGeminiApiKey = apiKey;
+  return res.json({ geminiConfigured: true, saved: persist ? "local-file" : "memory" });
 });
 
 app.get("/catalog/objects", (_req, res) => {
@@ -647,8 +732,21 @@ app.post("/generate", (req, res) => {
     if (!prompt) {
       return res.status(400).json({ error: "Prompt is required" });
     }
+    if (prompt.length > 500) {
+      return res.status(400).json({ error: "Prompt must be 500 characters or fewer." });
+    }
 
     const presetMatch = await resolveModelFromPrompt(prompt);
+    let generationPrompt = prompt;
+    let geminiEnhanced = false;
+    if (!presetMatch && hasGeminiApiKey()) {
+      try {
+        generationPrompt = await enhancePromptWithGemini(prompt);
+        geminiEnhanced = true;
+      } catch (error) {
+        console.warn("Gemini prompt enhancement failed; using the original prompt:", error.message);
+      }
+    }
     const result = presetMatch
       ? {
           taskId: null,
@@ -656,7 +754,7 @@ app.post("/generate", (req, res) => {
           modelUrl: presetMatch.modelUrl,
           iosModelUrl: presetMatch.iosModelUrl || "",
         }
-      : await generateModelFromText(prompt);
+      : await generateModelFromText(generationPrompt);
 
     const project = createProject({
       title: prompt.length > 32 ? `${prompt.slice(0, 29)}...` : prompt,
@@ -677,6 +775,8 @@ app.post("/generate", (req, res) => {
       meshyPreviewTaskId: result.previewTaskId,
       matchedKeyword: presetMatch?.keyword || null,
       matchScore: presetMatch?.score || null,
+      geminiEnhanced,
+      generationPrompt,
     });
   }).catch((error) => {
     console.error(error);
@@ -701,6 +801,50 @@ app.get("/generate/supported-prompts", (_req, res) => {
   });
 });
 
+app.post("/ai/analyze-floorplan", analysisUpload.single("file"), (req, res) => {
+  Promise.resolve().then(async () => {
+    if (!hasGeminiApiKey()) {
+      return res.status(503).json({ error: "Gemini analysis is not configured. Add GEMINI_API_KEY to Backend/.env and restart the backend." });
+    }
+    let imageBuffer = req.file?.buffer || null;
+    let originalName = req.file?.originalname || "";
+    if (!imageBuffer && req.body?.projectId) {
+      const project = readProjects().find((item) => String(item.id) === String(req.body.projectId));
+      if (!project || !["Blueprint to 3D", "Image Upload"].includes(project.type)) {
+        return res.status(404).json({ error: "Saved floor-plan image was not found." });
+      }
+      const filename = path.basename(String(project.source || ""));
+      if (!filename || filename !== String(project.source).replace(/^\/uploads\//, "") || filename.includes("..")) {
+        return res.status(400).json({ error: "Saved project does not reference a valid uploaded image." });
+      }
+      originalName = filename;
+      const imagePath = path.join(uploadsDir, filename);
+      if (!fs.existsSync(imagePath)) {
+        return res.status(404).json({ error: "The original uploaded image is no longer available." });
+      }
+      imageBuffer = fs.readFileSync(imagePath);
+    }
+    if (!imageBuffer) {
+      return res.status(400).json({ error: "Choose a floor-plan image to analyze." });
+    }
+
+    const ext = path.extname(originalName).toLowerCase();
+    const mimeType = ext === ".png" ? "image/png" : [".jpg", ".jpeg"].includes(ext) ? "image/jpeg" : "";
+    if (!mimeType) {
+      return res.status(400).json({ error: "Gemini floor-plan analysis supports JPG and PNG images." });
+    }
+
+    const analysis = await analyzeFloorPlanWithGemini(imageBuffer, mimeType, {
+      apiKey: activeGeminiApiKey,
+      model: GEMINI_MODEL,
+    });
+    return res.json({ analysis, provider: "Gemini", model: GEMINI_MODEL });
+  }).catch((error) => {
+    console.error("Floor-plan Gemini analysis failed:", error.message);
+    return res.status(error.status || 500).json({ error: error.message || "Gemini floor-plan analysis failed." });
+  });
+});
+
 app.post("/upload", upload.single("file"), (req, res) => {
   Promise.resolve().then(async () => {
     if (!req.file) {
@@ -716,6 +860,45 @@ app.post("/upload", upload.single("file"), (req, res) => {
     }
 
     const uploadedFilePath = path.join(uploadsDir, req.file.filename);
+    if (String(req.body?.mode || "") === "floorplan") {
+      const result = await convertFloorPlanToGlb(uploadedFilePath, uploadsDir);
+      const modelUrl = `${getPublicBaseUrl(req)}${result.modelUrl}`;
+      const project = createProject({
+        title: `${path.parse(req.file.originalname).name} 3D building`,
+        type: "Blueprint to 3D",
+        source: `/uploads/${req.file.filename}`,
+        modelUrl,
+        conversion: "approximate-floor-plan-extrusion",
+      });
+
+      return res.json({
+        message: `3D building shell generated from ${result.wallSegments} detected wall segments.`,
+        fileUrl: `/uploads/${req.file.filename}`,
+        modelUrl: project.modelUrl,
+        preserveMaterialColors: true,
+        project,
+        conversion: "approximate-floor-plan-extrusion",
+        dimensions: result.dimensions,
+        wallSegments: result.wallSegments,
+      });
+    }
+
+    if (!hasMeshyApiKey()) {
+      const fileUrl = `/uploads/${req.file.filename}`;
+      const project = createProject({
+        title: req.file.originalname,
+        type: "Image Upload",
+        source: fileUrl,
+        modelUrl: "",
+      });
+
+      return res.json({
+        message: "Image uploaded for preview. Configure Meshy to convert it to 3D.",
+        fileUrl,
+        project,
+      });
+    }
+
     const result = await generateModelFromImage(uploadedFilePath, ext);
     const project = createProject({
       title: req.file.originalname,
@@ -740,10 +923,24 @@ app.post("/upload", upload.single("file"), (req, res) => {
 });
 
 app.post("/manual-build", (req, res) => {
-  const { buildingLength, buildingWidth, floors, rooms, doors } = req.body || {};
-  if (!buildingLength || !buildingWidth || !floors || !rooms || !doors) {
-    return res.status(400).json({ error: "buildingLength, buildingWidth, floors, rooms, and doors are required" });
+  const ranges = {
+    buildingLength: [4, 40],
+    buildingWidth: [4, 30],
+    floors: [1, 5],
+    rooms: [1, 12],
+    doors: [1, 4],
+  };
+  const values = {};
+  for (const [field, [minimum, maximum]] of Object.entries(ranges)) {
+    const value = Number(req.body?.[field]);
+    if (!Number.isInteger(value) || value < minimum || value > maximum) {
+      return res.status(400).json({
+        error: `${field} must be a whole number from ${minimum} to ${maximum}.`,
+      });
+    }
+    values[field] = value;
   }
+  const { buildingLength, buildingWidth, floors, rooms, doors } = values;
 
   const cols = Math.ceil(Math.sqrt(Number(rooms)));
   const rows = Math.ceil(Number(rooms) / cols);
@@ -788,7 +985,8 @@ app.post("/manual-build", (req, res) => {
   const project = createProject({
     title: `Blueprint ${buildingLength}x${buildingWidth}m`,
     type: "Manual Blueprint",
-    source: JSON.stringify({ buildingLength, buildingWidth, floors, rooms, doors }),
+    source: blueprintSvgDataUrl,
+    modelUrl: "",
   });
   return res.json({
     message: "Blueprint generated",
@@ -801,9 +999,70 @@ app.get("/projects", (_req, res) => {
   return res.json({ projects: readProjects() });
 });
 
+app.post("/projects/:projectId/convert-floorplan", (req, res) => {
+  Promise.resolve().then(async () => {
+    const project = readProjects().find((item) => String(item.id) === String(req.params.projectId));
+    if (!project || !["Image Upload", "Blueprint to 3D"].includes(project.type)) {
+      return res.status(404).json({ error: "Saved floor-plan project not found." });
+    }
+
+    const filename = path.basename(String(project.source || ""));
+    if (!filename || filename !== String(project.source).replace(/^\/uploads\//, "") || filename.includes("..")) {
+      return res.status(400).json({ error: "Project does not reference a valid uploaded image." });
+    }
+
+    const imagePath = path.join(uploadsDir, filename);
+    if (!fs.existsSync(imagePath)) {
+      return res.status(404).json({ error: "The original uploaded image is no longer available." });
+    }
+
+    const result = await convertFloorPlanToGlb(imagePath, uploadsDir);
+    project.type = "Blueprint to 3D";
+    project.modelUrl = `${getPublicBaseUrl(req)}${result.modelUrl}`;
+    project.iosModelUrl = "";
+    project.conversion = "approximate-floor-plan-extrusion";
+    writeProjects(readProjects().map((item) => item.id === project.id ? project : item));
+
+    return res.json({
+      message: `3D building shell generated from ${result.wallSegments} detected wall segments.`,
+      modelUrl: project.modelUrl,
+      iosModelUrl: project.iosModelUrl,
+      project,
+      dimensions: result.dimensions,
+      wallSegments: result.wallSegments,
+    });
+  }).catch((error) => {
+    console.error(error);
+    const isPlanError = /floor plan|floor-plan|wall area/i.test(error.message || "");
+    return res.status(isPlanError ? 422 : 500).json({ error: error.message || "Failed to convert floor plan." });
+  });
+});
+
+function normalizeModelUrl(value) {
+  try {
+    const url = new URL(String(value || ""));
+    return ["http:", "https:"].includes(url.protocol) ? url.toString() : "";
+  } catch {
+    return "";
+  }
+}
+
+function escapeHtmlAttribute(value) {
+  return String(value).replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "\"": "&quot;",
+    "'": "&#39;",
+  })[character]);
+}
+
 app.post("/ar/link", (req, res) => {
-  const modelUrl = String(req.body?.modelUrl || PLACEHOLDER_MODEL_URL);
-  const iosModelUrl = String(req.body?.iosModelUrl || "");
+  const modelUrl = normalizeModelUrl(req.body?.modelUrl);
+  const iosModelUrl = req.body?.iosModelUrl ? normalizeModelUrl(req.body.iosModelUrl) : "";
+  if (!modelUrl || (req.body?.iosModelUrl && !iosModelUrl)) {
+    return res.status(400).json({ error: "A valid HTTP or HTTPS model URL is required." });
+  }
   const arUrl = `${getPublicBaseUrl(req)}/ar/view?model=${encodeURIComponent(modelUrl)}${
     iosModelUrl ? `&ios=${encodeURIComponent(iosModelUrl)}` : ""
   }`;
@@ -824,10 +1083,10 @@ app.post("/ar/link", (req, res) => {
 });
 
 app.get("/ar/view", (req, res) => {
-  const modelUrl = String(req.query?.model || PLACEHOLDER_MODEL_URL);
-  const iosModelUrl = String(req.query?.ios || "");
-  const safeModelUrl = JSON.stringify(modelUrl);
-  const iosAttribute = iosModelUrl ? `ios-src=${JSON.stringify(iosModelUrl)}` : "";
+  const modelUrl = normalizeModelUrl(req.query?.model) || PLACEHOLDER_MODEL_URL;
+  const iosModelUrl = normalizeModelUrl(req.query?.ios);
+  const safeModelUrl = escapeHtmlAttribute(modelUrl);
+  const iosAttribute = iosModelUrl ? `ios-src="${escapeHtmlAttribute(iosModelUrl)}"` : "";
 
   res.type("html").send(`<!DOCTYPE html>
 <html lang="en">
@@ -889,7 +1148,7 @@ app.get("/ar/view", (req, res) => {
         <p>Use the AR button under the model to place this object in your space.</p>
       </div>
       <model-viewer
-        src=${safeModelUrl}
+        src="${safeModelUrl}"
         ${iosAttribute}
         ar
         ar-modes="webxr scene-viewer quick-look"

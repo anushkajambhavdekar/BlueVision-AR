@@ -8,7 +8,7 @@ export function Brand({ compact = false }: BrandProps) {
   return (
     <div className="flex items-center gap-3">
       <img
-        src="/brand-logo.svg"
+        src="brand-logo.png"
         alt="BlueVision logo"
         className={`${compact ? "h-10 w-10" : "h-12 w-12"} rounded-xl object-cover shadow-lg shadow-blue-500/20`}
       />

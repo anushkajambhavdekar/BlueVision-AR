@@ -17,7 +17,7 @@ import { apiFetch } from './lib/api';
 import { FileImage, Type, QrCode, Hammer } from 'lucide-react';
 
 export type ViewerAsset =
-  | { kind: "model"; url: string; iosUrl?: string }
+  | { kind: "model"; url: string; iosUrl?: string; preserveMaterialColors?: boolean }
   | { kind: "image"; url: string }
   | { kind: "pdf"; url: string }
   | { kind: "file"; url: string };
@@ -60,7 +60,7 @@ export default function App() {
       <div className="min-h-screen bg-gradient-to-br from-gray-950 via-black to-gray-900">
         
         {/* Sidebar */}
-        <Sidebar onNavigate={navigateTo} userName="John Doe" userEmail="john@bluevision.ai" />
+        <Sidebar onNavigate={navigateTo} userName=" Anushka J" userEmail="anushka@bluevision.ai" />
 
         {/* Main Content Area */}
         <div className="ml-64">
@@ -82,7 +82,7 @@ export default function App() {
               <FeatureCard
                 icon={FileImage}
                 title="Blueprint to 3D"
-                description="Upload architectural blueprints and convert them to accurate 3D models"
+                description="Upload a floor plan and generate an approximate 3D building shell"
                 gradientFrom="from-cyan-500"
                 gradientTo="to-blue-600"
                 delay={0.3}

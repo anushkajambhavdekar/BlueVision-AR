@@ -17,7 +17,7 @@ function getInitials(name: string) {
     .join("") || "BV";
 }
 
-export function Navbar({ onSearchChange, userName = "John Doe" }: NavbarProps) {
+export function Navbar({ onSearchChange, userName = "Anushka J" }: NavbarProps) {
   const pingBackend = async () => {
     try {
       await apiFetch("/health");

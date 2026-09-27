@@ -6,8 +6,36 @@ type Props = {
   viewerAsset: ViewerAsset | null;
 };
 
-function getEmbeddedViewerSrcDoc(modelUrl: string) {
-  const safeModelUrl = JSON.stringify(modelUrl);
+function escapeHtmlAttribute(value: string) {
+  return value.replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "\"": "&quot;",
+    "'": "&#39;",
+  })[character] || character);
+}
+
+function getEmbeddedViewerSrcDoc(modelUrl: string, iosModelUrl = "", preserveMaterialColors = false) {
+  const safeModelUrl = escapeHtmlAttribute(modelUrl);
+  const iosModelAttribute = iosModelUrl ? `ios-src="${escapeHtmlAttribute(iosModelUrl)}"` : "";
+  const baseColorControl = preserveMaterialColors
+    ? `<label>Palette
+        <select id="palettePreset">
+          <option value="original">Original</option>
+          <option value="coastal">Coastal</option>
+          <option value="terracotta">Terracotta</option>
+          <option value="forest">Forest</option>
+          <option value="graphite">Graphite</option>
+          <option value="custom">Custom</option>
+        </select>
+      </label>
+      <label>Floor <input data-part-color="floor" type="color" value="#b87a47" /></label>
+      <label>Exterior walls <input data-part-color="exterior" type="color" value="#e0d4ad" /></label>
+      <label>Interior walls <input data-part-color="interior" type="color" value="#4a949b" /></label>
+      <button id="resetColors" type="button">Reset colors</button>`
+    : `<label>Base color <input id="baseColor" type="color" value="#ffffff" /></label>
+      <button id="resetColors" type="button">Reset colors</button>`;
   return `<!DOCTYPE html>
 <html lang="en">
   <head>
@@ -92,12 +120,17 @@ function getEmbeddedViewerSrcDoc(modelUrl: string) {
       input[type="range"] {
         width: 120px;
       }
+      select {
+        min-width: 132px;
+        text-align: left;
+      }
     </style>
     <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
   </head>
   <body>
     <model-viewer id="viewer"
-      src=${safeModelUrl}
+      src="${safeModelUrl}"
+      ${iosModelAttribute}
       camera-controls
       auto-rotate
       shadow-intensity="1"
@@ -105,6 +138,7 @@ function getEmbeddedViewerSrcDoc(modelUrl: string) {
       environment-image="neutral"
       interaction-prompt="auto"
       ar
+      ar-modes="webxr scene-viewer quick-look"
     ></model-viewer>
     <div class="toolbar">
       <div class="tabs">
@@ -134,10 +168,7 @@ function getEmbeddedViewerSrcDoc(modelUrl: string) {
     </div>
     <div id="color" class="panel" hidden>
       <strong>Color</strong>
-      <label>
-        Base color
-        <input id="baseColor" type="color" value="#ffffff" />
-      </label>
+      ${baseColorControl}
       <label>
         Roughness
         <input id="roughness" type="range" min="0" max="1" step="0.05" value="0.5" />
@@ -156,9 +187,40 @@ function getEmbeddedViewerSrcDoc(modelUrl: string) {
       const rotationSpeed = document.getElementById('rotationSpeed');
       const resetPose = document.getElementById('resetPose');
       const baseColor = document.getElementById('baseColor');
+      const palettePreset = document.getElementById('palettePreset');
+      const partColorInputs = document.querySelectorAll('[data-part-color]');
       const roughness = document.getElementById('roughness');
       const metalness = document.getElementById('metalness');
       let customColorApplied = false;
+      const originalPartColors = { floor: '#b87a47', exterior: '#e0d4ad', interior: '#4a949b' };
+      const colorPalettes = {
+        coastal: { floor: '#a77d59', exterior: '#e6f0e8', interior: '#438a96' },
+        terracotta: { floor: '#a95d3c', exterior: '#f0d5b0', interior: '#bd765f' },
+        forest: { floor: '#806149', exterior: '#d6d2ad', interior: '#5b805f' },
+        graphite: { floor: '#62676d', exterior: '#cbd0d2', interior: '#798d9c' }
+      };
+
+      function applyPartColor(partName, color) {
+        if (!viewer.model) return;
+        viewer.model.materials.forEach((material) => {
+          const name = String(material.name || '').toLowerCase();
+          const matchesPart = partName === 'floor'
+            ? name.includes('floor')
+            : partName === 'exterior'
+              ? name.includes('exterior')
+              : name.includes('interior');
+          if (matchesPart) material.pbrMetallicRoughness.setBaseColorFactor(color);
+        });
+      }
+
+      function applyPalette(palette) {
+        const colors = palette === 'original' ? originalPartColors : colorPalettes[palette];
+        if (!colors) return;
+        partColorInputs.forEach((input) => {
+          input.value = colors[input.dataset.partColor];
+          applyPartColor(input.dataset.partColor, input.value);
+        });
+      }
 
       tabs.forEach((tab) => {
         tab.addEventListener('click', () => {
@@ -199,7 +261,7 @@ function getEmbeddedViewerSrcDoc(modelUrl: string) {
       function updateMaterials() {
         if (!viewer.model) return;
         viewer.model.materials.forEach((material) => {
-          if (customColorApplied) {
+          if (customColorApplied && baseColor) {
             material.pbrMetallicRoughness.setBaseColorFactor(baseColor.value);
           }
           material.pbrMetallicRoughness.setRoughnessFactor(Number(roughness.value));
@@ -208,8 +270,28 @@ function getEmbeddedViewerSrcDoc(modelUrl: string) {
       }
 
       viewer.addEventListener('load', updateMaterials);
-      baseColor.addEventListener('input', () => {
+      baseColor?.addEventListener('input', () => {
         customColorApplied = true;
+        updateMaterials();
+      });
+      partColorInputs.forEach((input) => {
+        input.addEventListener('input', () => {
+          palettePreset.value = 'custom';
+          applyPartColor(input.dataset.partColor, input.value);
+        });
+      });
+      palettePreset?.addEventListener('change', () => applyPalette(palettePreset.value));
+      document.getElementById('resetColors')?.addEventListener('click', () => {
+        if (palettePreset) {
+          palettePreset.value = 'original';
+          applyPalette('original');
+        }
+        if (baseColor) {
+          baseColor.value = '#ffffff';
+          customColorApplied = false;
+        }
+        roughness.value = '0.5';
+        metalness.value = '0.1';
         updateMaterials();
       });
       roughness.addEventListener('input', updateMaterials);
@@ -221,7 +303,9 @@ function getEmbeddedViewerSrcDoc(modelUrl: string) {
 
 export function ViewerSection({ viewerAsset }: Props) {
   const assetUrl = viewerAsset?.url || "";
-  const viewerSrcDoc = viewerAsset?.kind === "model" ? getEmbeddedViewerSrcDoc(assetUrl) : "";
+  const viewerSrcDoc = viewerAsset?.kind === "model"
+    ? getEmbeddedViewerSrcDoc(assetUrl, viewerAsset.iosUrl, viewerAsset.preserveMaterialColors)
+    : "";
 
   const openAsset = () => {
     if (!assetUrl) return alert("No file loaded yet");
@@ -282,7 +366,7 @@ export function ViewerSection({ viewerAsset }: Props) {
             srcDoc={viewerSrcDoc}
             title="3D model viewer"
             className="h-full w-full border-0"
-            allow="fullscreen; xr-spatial-tracking"
+            allow="camera; fullscreen; xr-spatial-tracking"
           />
         ) : viewerAsset.kind === "image" ? (
           <img src={assetUrl} alt="Uploaded source" className="h-full w-full object-contain" />

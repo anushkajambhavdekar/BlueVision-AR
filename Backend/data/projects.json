@@ -1,5 +1,131 @@
 [
   {
+    "id": 1790493561550,
+    "title": "TX86-GROUND-Floor23 3D building",
+    "type": "Blueprint to 3D",
+    "source": "/uploads/1790493561507-TX86-GROUND-Floor23.jpg",
+    "modelUrl": "http://192.168.1.105:5001/uploads/1790493561507-TX86-GROUND-Floor23-building-1790493561544.glb",
+    "iosModelUrl": "",
+    "conversion": "approximate-floor-plan-extrusion",
+    "polygons": "52,915",
+    "date": "Sep 27, 2026",
+    "createdAt": "2026-09-27T07:19:21.550Z"
+  },
+  {
+    "id": 1790493087091,
+    "title": "2d 3D building",
+    "type": "Blueprint to 3D",
+    "source": "/uploads/1790493086988-2d.jpg",
+    "modelUrl": "http://192.168.1.105:5001/uploads/1790493086988-2d-building-1790493087081.glb",
+    "iosModelUrl": "",
+    "conversion": "approximate-floor-plan-extrusion",
+    "polygons": "9,670",
+    "date": "Sep 27, 2026",
+    "createdAt": "2026-09-27T07:11:27.091Z"
+  },
+  {
+    "id": 1790493011385,
+    "title": "chair",
+    "type": "Text to 3D",
+    "source": "chair",
+    "modelUrl": "https://modelviewer.dev/assets/ShopifyModels/Chair.glb",
+    "iosModelUrl": "",
+    "polygons": "37,762",
+    "date": "Sep 27, 2026",
+    "createdAt": "2026-09-27T07:10:11.384Z"
+  },
+  {
+    "id": 1790491783390,
+    "title": "TX86-GROUND-Floor 3D building",
+    "type": "Blueprint to 3D",
+    "source": "/uploads/1790491783310-TX86-GROUND-Floor.jpg",
+    "modelUrl": "http://192.168.1.105:5001/uploads/1790491783310-TX86-GROUND-Floor-building-1790492350529.glb",
+    "iosModelUrl": "",
+    "polygons": "34,510",
+    "date": "Sep 27, 2026",
+    "createdAt": "2026-09-27T06:49:43.390Z",
+    "conversion": "approximate-floor-plan-extrusion"
+  },
+  {
+    "id": 1790490658825,
+    "title": "TX86-GROUND-Floor 3D building",
+    "type": "Blueprint to 3D",
+    "source": "/uploads/1790490658717-TX86-GROUND-Floor.jpg",
+    "modelUrl": "http://192.168.1.105:5001/uploads/1790490658717-TX86-GROUND-Floor-building.glb",
+    "iosModelUrl": "",
+    "polygons": "23,736",
+    "date": "Sep 27, 2026",
+    "createdAt": "2026-09-27T06:30:58.825Z"
+  },
+  {
+    "id": 1790490591965,
+    "title": "TX86-GROUND-Floor 3D building",
+    "type": "Blueprint to 3D",
+    "source": "/uploads/1790490591887-TX86-GROUND-Floor.jpg",
+    "modelUrl": "http://192.168.1.105:5001/uploads/1790490591887-TX86-GROUND-Floor-building.glb",
+    "iosModelUrl": "",
+    "polygons": "71,145",
+    "date": "Sep 27, 2026",
+    "createdAt": "2026-09-27T06:29:51.965Z"
+  },
+  {
+    "id": 1790489762011,
+    "title": "only LogoVector.png",
+    "type": "Image Upload",
+    "source": "/uploads/1790489762007-only_LogoVector.png",
+    "modelUrl": "",
+    "iosModelUrl": "",
+    "polygons": "34,638",
+    "date": "Sep 27, 2026",
+    "createdAt": "2026-09-27T06:16:02.011Z"
+  },
+  {
+    "id": 1790489616039,
+    "title": "chair",
+    "type": "Text to 3D",
+    "source": "chair",
+    "modelUrl": "https://modelviewer.dev/assets/ShopifyModels/Chair.glb",
+    "iosModelUrl": "",
+    "polygons": "32,203",
+    "date": "Sep 27, 2026",
+    "createdAt": "2026-09-27T06:13:36.039Z"
+  },
+  {
+    "id": 1790489590126,
+    "title": "Blueprint 36x30m",
+    "type": "Manual Blueprint",
+    "source": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4NDAiIGhlaWdodD0iODQwIiB2aWV3Qm94PSIwIDAgNDIwIDQyMCI+CiAgICA8cmVjdCB3aWR0aD0iNDIwIiBoZWlnaHQ9IjQyMCIgZmlsbD0iIzA3MTExZiIvPgogICAgPHJlY3QgeD0iNjAiIHk9IjcwIiB3aWR0aD0iMzAwIiBoZWlnaHQ9IjI1MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZTBmMmZlIiBzdHJva2Utd2lkdGg9IjYiLz4KICAgIDxsaW5lIHgxPSIxNjAiIHkxPSI3MCIgeDI9IjE2MCIgeTI9IjMyMCIgc3Ryb2tlPSIjN2RkM2ZjIiBzdHJva2Utd2lkdGg9IjQiIC8+PGxpbmUgeDE9IjI2MCIgeTE9IjcwIiB4Mj0iMjYwIiB5Mj0iMzIwIiBzdHJva2U9IiM3ZGQzZmMiIHN0cm9rZS13aWR0aD0iNCIgLz48bGluZSB4MT0iNjAiIHkxPSIxOTUiIHgyPSIzNjAiIHkyPSIxOTUiIHN0cm9rZT0iIzdkZDNmYyIgc3Ryb2tlLXdpZHRoPSI0IiAvPgogICAgPHRleHQgeD0iNzQiIHk9Ijk2IiBmaWxsPSIjYmFlNmZkIiBmb250LXNpemU9IjE0Ij5Sb29tIDE8L3RleHQ+PHRleHQgeD0iMTc0IiB5PSI5NiIgZmlsbD0iI2JhZTZmZCIgZm9udC1zaXplPSIxNCI+Um9vbSAyPC90ZXh0Pjx0ZXh0IHg9IjI3NCIgeT0iOTYiIGZpbGw9IiNiYWU2ZmQiIGZvbnQtc2l6ZT0iMTQiPlJvb20gMzwvdGV4dD48dGV4dCB4PSI3NCIgeT0iMjIxIiBmaWxsPSIjYmFlNmZkIiBmb250LXNpemU9IjE0Ij5Sb29tIDQ8L3RleHQ+PHRleHQgeD0iMTc0IiB5PSIyMjEiIGZpbGw9IiNiYWU2ZmQiIGZvbnQtc2l6ZT0iMTQiPlJvb20gNTwvdGV4dD48dGV4dCB4PSIyNzQiIHk9IjIyMSIgZmlsbD0iI2JhZTZmZCIgZm9udC1zaXplPSIxNCI+Um9vbSA2PC90ZXh0PgogICAgPGxpbmUgeDE9Ijk1IiB5MT0iMzIwIiB4Mj0iMTI5IiB5Mj0iMzIwIiBzdHJva2U9IiMwNzExMWYiIHN0cm9rZS13aWR0aD0iOCIgLz4KICAgICAgPHBhdGggZD0iTSA5NSAzMjAgQSAzNCAzNCAwIDAgMSAxMjkgMjg2IiBmaWxsPSJub25lIiBzdHJva2U9IiNmYmJmMjQiIHN0cm9rZS13aWR0aD0iMyIgLz48bGluZSB4MT0iMTY3IiB5MT0iMzIwIiB4Mj0iMjAxIiB5Mj0iMzIwIiBzdHJva2U9IiMwNzExMWYiIHN0cm9rZS13aWR0aD0iOCIgLz4KICAgICAgPHBhdGggZD0iTSAxNjcgMzIwIEEgMzQgMzQgMCAwIDEgMjAxIDI4NiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmJiZjI0IiBzdHJva2Utd2lkdGg9IjMiIC8+PGxpbmUgeDE9IjIzOSIgeTE9IjMyMCIgeDI9IjI3MyIgeTI9IjMyMCIgc3Ryb2tlPSIjMDcxMTFmIiBzdHJva2Utd2lkdGg9IjgiIC8+CiAgICAgIDxwYXRoIGQ9Ik0gMjM5IDMyMCBBIDM0IDM0IDAgMCAxIDI3MyAyODYiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZiYmYyNCIgc3Ryb2tlLXdpZHRoPSIzIiAvPjxsaW5lIHgxPSIzMTEiIHkxPSIzMjAiIHgyPSIzNDUiIHkyPSIzMjAiIHN0cm9rZT0iIzA3MTExZiIgc3Ryb2tlLXdpZHRoPSI4IiAvPgogICAgICA8cGF0aCBkPSJNIDMxMSAzMjAgQSAzNCAzNCAwIDAgMSAzNDUgMjg2IiBmaWxsPSJub25lIiBzdHJva2U9IiNmYmJmMjQiIHN0cm9rZS13aWR0aD0iMyIgLz4KICAgIDxsaW5lIHgxPSI2MCIgeTE9IjQ4IiB4Mj0iMzYwIiB5Mj0iNDgiIHN0cm9rZT0iI2Y4ZmFmYyIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgICA8dGV4dCB4PSIyMTAiIHk9IjM2IiBmaWxsPSIjZjhmYWZjIiBmb250LXNpemU9IjE2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj4zNiBtPC90ZXh0PgogICAgPGxpbmUgeDE9IjM4MiIgeTE9IjcwIiB4Mj0iMzgyIiB5Mj0iMzIwIiBzdHJva2U9IiNmOGZhZmMiIHN0cm9rZS13aWR0aD0iMiIvPgogICAgPHRleHQgeD0iMzk4IiB5PSIxOTgiIGZpbGw9IiNmOGZhZmMiIGZvbnQtc2l6ZT0iMTYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIHRyYW5zZm9ybT0icm90YXRlKDkwIDM5OCAxOTgpIj4zMCBtPC90ZXh0PgogICAgPHRleHQgeD0iNjAiIHk9IjM1NiIgZmlsbD0iI2JhZTZmZCIgZm9udC1zaXplPSIxNCI+MSBmbG9vcihzKSDigKIgNiByb29tKHMpIOKAoiA0IGVudHJhbmNlKHMpPC90ZXh0PgogIDwvc3ZnPg==",
+    "modelUrl": "",
+    "iosModelUrl": "",
+    "polygons": "8,435",
+    "date": "Sep 27, 2026",
+    "createdAt": "2026-09-27T06:13:10.126Z"
+  },
+  {
+    "id": 1790489485785,
+    "title": "2d.jpg",
+    "type": "Blueprint to 3D",
+    "source": "/uploads/1790489485773-2d.jpg",
+    "modelUrl": "http://192.168.1.105:5001/uploads/1790489485773-2d-building-1790491543006.glb",
+    "iosModelUrl": "",
+    "polygons": "31,910",
+    "date": "Sep 27, 2026",
+    "createdAt": "2026-09-27T06:11:25.785Z",
+    "conversion": "approximate-floor-plan-extrusion"
+  },
+  {
+    "id": 1790489002551,
+    "title": "2d.jpg",
+    "type": "Blueprint to 3D",
+    "source": "/uploads/1790489002544-2d.jpg",
+    "modelUrl": "http://192.168.1.105:5001/uploads/1790489002544-2d-building.glb",
+    "iosModelUrl": "",
+    "polygons": "23,082",
+    "date": "Sep 27, 2026",
+    "createdAt": "2026-09-27T06:03:22.551Z",
+    "conversion": "approximate-floor-plan-extrusion"
+  },
+  {
     "id": 1778900288608,
     "title": "Manual Build 4x2x2",
     "type": "Manual Builder",
@@ -86,16 +212,15 @@
     "createdAt": "2026-04-24T11:40:51.087Z"
   },
   {
-  "id": 1777030851088,
-  "title": "laptop",
-  "type": "Text to 3D",
-  "source": "laptop",
-  "modelUrl": "https://modelviewer.dev/assets/ShopifyModels/Laptop.glb",
-  "polygons": "8,432",
-  "date": "May 16, 2026",
-  "createdAt": "2026-05-16T09:41:28.088Z"
-},
-
+    "id": 1777030851088,
+    "title": "laptop",
+    "type": "Text to 3D",
+    "source": "laptop",
+    "modelUrl": "https://modelviewer.dev/assets/ShopifyModels/Laptop.glb",
+    "polygons": "8,432",
+    "date": "May 16, 2026",
+    "createdAt": "2026-05-16T09:41:28.088Z"
+  },
   {
     "id": 1777030554325,
     "title": "chair",

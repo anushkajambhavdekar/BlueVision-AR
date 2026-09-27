@@ -15,10 +15,14 @@ export function HeroSection({ setViewerAsset, onProjectCreated }: HeroSectionPro
   const [prompt, setPrompt] = useState("chair");
   const [isGenerating, setIsGenerating] = useState(false);
   const [catalog, setCatalog] = useState<TextTo3dCatalogObject[]>(TEXT_TO_3D_PRESETS);
+  const [geminiConfigured, setGeminiConfigured] = useState(false);
 
   useEffect(() => {
     apiFetch<{ objects: TextTo3dCatalogObject[] }>("/catalog/objects")
       .then((data) => setCatalog(data.objects))
+      .catch((error) => console.error(error));
+    apiFetch<{ geminiConfigured: boolean }>("/config")
+      .then((data) => setGeminiConfigured(data.geminiConfigured))
       .catch((error) => console.error(error));
   }, []);
 
@@ -33,25 +37,17 @@ export function HeroSection({ setViewerAsset, onProjectCreated }: HeroSectionPro
     }
 
     try {
-      const presetAsset = getPresetAssetFromPrompt(prompt, catalog);
-      if (presetAsset) {
-        setViewerAsset(presetAsset);
-        onProjectCreated?.();
-        alert("Closest catalog 3D object loaded successfully.");
-        return;
-      }
-
       setIsGenerating(true);
-      const data = await apiFetch<{ modelUrl: string }>("/generate", {
+      const data = await apiFetch<{ modelUrl: string; iosModelUrl?: string; message?: string }>("/generate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ prompt }),
       });
-      setViewerAsset({ kind: "model", url: data.modelUrl });
+      setViewerAsset({ kind: "model", url: data.modelUrl, iosUrl: data.iosModelUrl });
       onProjectCreated?.();
-      alert("3D model generated successfully ✅");
+      alert(data.message || "3D model is ready.");
     } catch (error) {
       console.error(error);
       alert(error instanceof Error ? error.message : "Failed to generate 3D model ❌");
@@ -86,6 +82,9 @@ export function HeroSection({ setViewerAsset, onProjectCreated }: HeroSectionPro
           className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
         />
       </div>
+      <p className="mb-4 text-sm text-gray-400">
+        Gemini prompt refinement {geminiConfigured ? "is enabled" : "is optional and not configured"}.
+      </p>
       <div className="mb-6 flex max-w-3xl flex-wrap gap-2">
         {catalog.map((preset) => (
           <button
