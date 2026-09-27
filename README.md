@@ -183,4 +183,5 @@ Project Description.md  Full functional and technical project description
 - **MySQL connection fails:** Check `DB_TYPE`, database/schema, host, port, and credentials. JSON is the default catalog backend.
 #   A R - B l u e V i s i o n  
  #   A R - B l u e V i s i o n  
+ #   A R - B l u e V i s i o n  
  
